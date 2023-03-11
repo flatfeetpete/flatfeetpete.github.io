@@ -1,0 +1,28 @@
+body {
+    font-family: arial, sans-serif;
+    background-color: white;
+    margin: 0px;
+}
+
+#highlight {
+    width: 200px;
+    height: 173px;
+    border-style: solid;
+    border-color: black;
+    border-width: 2px;
+    position: absolute;
+    display: none;
+}
+
+#highlight img {
+    width: 200px;
+    height: 173px;
+}
+
+#highlight_img {}
+
+#highlight_overlay {
+    position: relative;
+    top: -173px;
+    opacity: 0.5;
+}

@@ -1,4 +1,5 @@
 toys
 ====
 
-[UnicodeRGB](UnicodeRGB) - A simple canvas experiment. 
+[UnicodeRGB](UnicodeRGB) - A simple canvas experiment.
+[Hexaflexagon Creator](hexaflexagon)]
