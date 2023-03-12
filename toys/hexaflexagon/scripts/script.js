@@ -1,13 +1,17 @@
-
 // Warning, ugly cobbled together crap follows.
+// I echo the above warning from 2012 in 2023.
 
 var svgns = "http://www.w3.org/2000/svg";
 var xlns = "http://www.w3.org/1999/xlink";
+
 
 var rowHeight = Math.sqrt(3) / 2;
 var centerFromBase = 0.5 / Math.sqrt(3);
 var centerFromTop = rowHeight - centerFromBase;
 var scale = 100;
+
+var PASTED_IMAGE = "<PASTED IMAGE>";
+var UPLOADED_IMAGE = "<UPLOADED IMAGE>"
 
 function addClippingDefs(defsEl, svgEl) {
     var clip = svgEl("clipPath");
@@ -93,7 +97,14 @@ function updateImages() {
     for (var i = 1; i < 7; i++) {
         var image = document.getElementById('image' + i);
         var isrc = document.getElementById('isrc' + i);
-        image.src = isrc.value;
+        var src_val = isrc.value;
+        if (src_val == PASTED_IMAGE) {
+            image.src = image.pasted_data_url;
+        } else if (src_val == UPLOADED_IMAGE)
+            image.src = image.uploaded_data_url;
+        else {
+            image.src = isrc.value;
+        }
         var h = isrc.offsetHeight;
         var w = h / rowHeight;
         image.width = w;
@@ -203,4 +214,46 @@ function myOnload(foo) {
         iframe.width = iframe_body.scrollWidth;
         iframe.height = iframe_body.scrollHeight;
     }
+
+}
+
+document.onpaste = function (event) {
+    var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    for (var index in items) {
+        var item = items[index];
+        if (item.kind === 'file') {
+            // We have an image, let's make sure we've got a slot selected.
+            var selected_element_id = document.activeElement.id;
+            if ("isrc" != selected_element_id.substring(0, 4)) {
+                alert("Please select one of the six text boxes and paste again.");
+                return;
+            }
+            var image_index = parseInt(selected_element_id.substring(4));
+            var blob = item.getAsFile();
+            var reader = new FileReader();
+            reader.onload = function (event) {
+                var image = document.getElementById('image' + image_index);
+                var isrc = document.getElementById('isrc' + image_index);
+                image.pasted_data_url = event.target.result;
+                isrc.value = PASTED_IMAGE;
+                updateImages();
+            };
+            reader.readAsDataURL(blob);
+            event.stopPropagation();
+        }
+    }
+};
+
+function uploadImage(event) {
+    var reader = new FileReader();
+    var image_index = parseInt(event.target.dataset['imageId']);
+    reader.onload = function () {
+        var output = document.getElementById('output_image');
+        var image = document.getElementById('image' + image_index);
+        var isrc = document.getElementById('isrc' + image_index);
+        image.uploaded_data_url = reader.result;
+        isrc.value = UPLOADED_IMAGE;
+        updateImages();
+    }
+    reader.readAsDataURL(event.target.files[0]);
 }

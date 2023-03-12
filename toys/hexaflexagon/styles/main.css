@@ -1,6 +1,6 @@
 body {
     font-family: arial, sans-serif;
-    font-size: 14pt;
+    font-size: 12pt;
     background-color: white;
     margin: 0px;
 }
@@ -20,10 +20,33 @@ body {
     height: 173px;
 }
 
-#highlight_img {}
-
 #highlight_overlay {
     position: relative;
     top: -173px;
     opacity: 0.5;
+}
+
+button {
+    font-size: 25pt;
+    background-color: white;
+}
+
+input {
+    font-size: 25pt;
+    background-color: white;
+}
+
+.imgpreview {
+    height: 50px;
+    padding-left: 4px;
+}
+
+.file_input {
+    display: none;
+}
+
+.upload_label {
+    font-size: 25pt;
+    border: black 2px solid;
+    text-align: center;
 }

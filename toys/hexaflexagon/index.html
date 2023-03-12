@@ -1,7 +1,7 @@
 <html>
 
 <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8" content=en>
+    <meta charset="UTF-8">
     <link href='styles/main.css' rel='stylesheet' type='text/css'>
     <script type="text/javascript" src="scripts/script.js"></script>
     <title>Flexagon Creator!</title>
@@ -10,29 +10,61 @@
 <body onload="myOnload()">
     <h1>Flexagon Creator!</h1>
     <p>
-        Enter image locations in the six boxes below and hit one of the create buttons. Print and follow the
-        instructions below.
+        You can change the images by either.
+    <ol>
+        <li>Selecting the box and pasting in a URL.
+        <li>Selecting the box and pasting in an image.
+        <li>Hiting the ⬆ to upload an image.
+    </ol>
+    Enter image locations in the six boxes below and hit one of the create buttons. Print and follow the
+    instructions below.
+    </p>
+    <p><strong>This tool saves nothing.</strong> Unless you save / print everything disappears when you close the tab.
     </p>
 
     <ul>
-        <li>Image #1: <input type="text" name="isrc1" id="isrc1" size="60"
-                value="http://i4.ytimg.com/vi/kfVsfOSbJY0/hqdefault.jpg" /><img id="image1" /><br />
-        <li>Image #2: <input type="text" name="isrc2" id="isrc2" size="60"
-                value="http://i4.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" /><img id="image2" /><br />
-        <li>Image #3: <input type="text" name="isrc3" id="isrc3" size="60"
-                value="http://i2.ytimg.com/vi/QH2-TGUlwu4/hqdefault.jpg" /><img id="image3" /><br />
-        <li>Image #4: <input type="text" name="isrc4" id="isrc4" size="60"
-                value="http://i1.ytimg.com/vi/dMH0bHeiRNg/hqdefault.jpg" /><img id="image4" /><br />
-        <li>Image #5: <input type="text" name="isrc5" id="isrc5" size="60"
-                value="http://i3.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg" /><img id="image5" /><br />
-        <li>Image #6: <input type="text" name="isrc6" id="isrc6" size="60"
-                value="http://i4.ytimg.com/vi/XqZsoesa55w/hqdefault.jpg" /><img id="image6" /><br />
+        <li>Image #1: <input type="text" name="isrc1" id="isrc1" size="20"
+                value="http://i4.ytimg.com/vi/kfVsfOSbJY0/hqdefault.jpg" /><img class="imgpreview" id="image1" />
+            <label class="upload_label">
+                ⬆ <input class="file_input" type="file" accept="image/*" onchange="uploadImage(event)"
+                    data-image-id="1">
+            </label>
+        <li>Image #2: <input type="text" name="isrc2" id="isrc2" size="20"
+                value="http://i4.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" /><img class="imgpreview" id="image2" />
+            <label class="upload_label">
+                ⬆ <input class="file_input" type="file" accept="image/*" onchange="uploadImage(event)"
+                    data-image-id="2">
+            </label>
+        <li>Image #3: <input type="text" name="isrc3" id="isrc3" size="20"
+                value="http://i2.ytimg.com/vi/QH2-TGUlwu4/hqdefault.jpg" /><img class="imgpreview" id="image3" />
+            <label class="upload_label">
+                ⬆ <input class="file_input" type="file" accept="image/*" onchange="uploadImage(event)"
+                    data-image-id="3">
+            </label>
+        <li>Image #4: <input type="text" name="isrc4" id="isrc4" size="20"
+                value="http://i1.ytimg.com/vi/dMH0bHeiRNg/hqdefault.jpg" /><img class="imgpreview" id="image4" />
+            <label class="upload_label">
+                ⬆ <input class="file_input" type="file" accept="image/*" onchange="uploadImage(event)"
+                    data-image-id="4">
+            </label>
+        <li>Image #5: <input type="text" name="isrc5" id="isrc5" size="20"
+                value="http://i3.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg" /><img class="imgpreview" id="image5" />
+            <label class="upload_label">
+                ⬆ <input class="file_input" type="file" accept="image/*" onchange="uploadImage(event)"
+                    data-image-id="5">
+            </label>
+        <li>Image #6: <input type="text" name="isrc6" id="isrc6" size="20"
+                value="http://i4.ytimg.com/vi/XqZsoesa55w/hqdefault.jpg" /><img class="imgpreview" id="image6" />
+            <label class="upload_label">
+                ⬆ <input class="file_input" type="file" accept="image/*" onchange="uploadImage(event)"
+                    data-image-id="6">
+            </label>
     </ul>
 
     <button onClick="runScript(false)">Create in Pop-up</button>
     <button onClick="runScript(true)">Create in this window</button>
     <div id="highlight">
-        <img id="highlight_img" src="images/people/1_ali.jpg" />
+        <img id="highlight_img" src="images/template.jpg" />
         <img id="highlight_overlay" src="images/template.jpg" />
     </div>
     <p>
