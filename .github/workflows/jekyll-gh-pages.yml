@@ -28,6 +28,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Checkout 3D experiment
+        uses: actions/checkout@v4
+        with:
+          repository: flatfeetpete/web_experiments
+          path: toys/web_experiments
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with Jekyll
