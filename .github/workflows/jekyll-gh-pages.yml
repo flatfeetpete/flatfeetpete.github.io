@@ -32,6 +32,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: flatfeetpete/web_experiments
+          token: ${{ secrets.WEBEXPAT }}
           path: toys/web_experiments
       - name: Setup Pages
         uses: actions/configure-pages@v5
