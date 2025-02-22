@@ -1,0 +1,47 @@
+<html>
+
+<head>
+    <script src="cloudpilot-emu.js"></script>
+    <link rel="stylesheet" href="sample.css">
+
+    </style>
+</head>
+
+<body>
+    <h1>Space curling!</h1>
+    Use the menu button (near bottom left) to see the "start game" option.
+    <canvas tabindex="1"></canvas>
+    <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/install-and-start.html">
+        Copied from this source on github
+    </a>
+
+    <script>
+        (async function () {
+            const sessionResponse = await fetch('session.img');
+            if (!sessionResponse.ok) {
+                throw new Error('could not download session file');
+            }
+
+            const session = await sessionResponse.arrayBuffer();
+
+            const prcResponse = await fetch('curling.prc');
+            if (!prcResponse.ok) {
+                throw new Error('could not download prc file');
+            }
+
+            const prc = await prcResponse.arrayBuffer();
+
+            const emulator = await cloudpilot.createEmulator();
+            const canvas = document.getElementsByTagName('canvas')[0];
+
+            emulator
+                .loadSession(new Uint8Array(session))
+                .installAndLaunchDatabase(new Uint8Array(prc))
+                .setCanvas(canvas)
+                .bindInput(canvas)
+                .resume();
+        })().catch(e => console.error(e));
+    </script>
+</body>
+
+</html>
