@@ -32,6 +32,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: flatfeetpete/web_experiments
+          # Refresh at https://github.com/settings/personal-access-tokens
           token: ${{ secrets.WEBEXPAT }}
           path: toys/web_experiments
       - name: Setup Pages
