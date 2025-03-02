@@ -118,11 +118,15 @@
         document.addEventListener('mouseleave', handleEnd);
         document.addEventListener('touchcancel', handleEnd);
 
-        // Add resize event listener
-        window.addEventListener('resize', () => {
+        function updateDisplayNow() {
             const currentTop = parseFloat(window.getComputedStyle(tv).top) || 0;
             updateDisplay(currentTop);
-        });
+        }
+
+        // Add resize event listener
+        window.addEventListener('resize', updateDisplayNow);
+
+        updateDisplayNow();
     </script>
 </body>
 </html>
