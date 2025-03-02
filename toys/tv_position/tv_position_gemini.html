@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Overlay - Draggable</title>
+    <style>
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            user-select: none; /* Prevent text selection during drag */
+        }
+
+        #background-container {
+            width: 100vw;
+            height: auto;
+            position: relative;
+            cursor: grab; /* Change cursor on hover */
+            overflow: hidden; /*Prevents the image from being outside the container if not dragged*/
+        }
+
+        #background {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+        }
+
+        #tv-full {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
+
+        #background-container.dragging {
+            cursor: grabbing; /* Change cursor while dragging */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="background-container">
+        <img id="background" src="background.png" alt="Background Image">
+        <img id="tv-full" src="tv_full.png" alt="TV Full Image">
+    </div>
+
+    <script>
+        const container = document.getElementById('background-container');
+        const tvFull = document.getElementById('tv-full');
+        let isDragging = false;
+        let startY = 0;
+        let currentY = 0;
+        let initialContainerHeight = container.offsetHeight; // Add this line
+
+        function handleDragStart(e) {
+            isDragging = true;
+            startY = e.clientY || e.touches[0].clientY;
+            currentY = tvFull.offsetTop;
+            container.classList.add('dragging');
+
+            // Add event listeners to document for continuous tracking
+            document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('touchmove', handleDragMove);
+            document.addEventListener('mouseup', handleDragEnd);
+            document.addEventListener('touchend', handleDragEnd);
+
+        }
+
+        function handleDragMove(e) {
+            if (!isDragging) return;
+            const clientY = e.clientY || e.touches[0].clientY;
+            const diffY = clientY - startY;
+            let newY = currentY + diffY;
+
+            // Allow dragging outside the top
+            if (newY < -tvFull.offsetHeight) {
+              newY = -tvFull.offsetHeight
+            }
+
+            // Allow dragging outside the bottom.
+            if (newY > initialContainerHeight) {
+              newY = initialContainerHeight;
+            }
+            tvFull.style.top = newY + 'px';
+            
+        }
+
+        function handleDragEnd() {
+            isDragging = false;
+            container.classList.remove('dragging');
+
+            // Remove event listeners from document
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('touchmove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+            document.removeEventListener('touchend', handleDragEnd);
+
+            // Check if tvFull is out of view and bring back
+             bringBackIntoView();
+        }
+
+        // Add event listeners to container for drag start
+        container.addEventListener('mousedown', handleDragStart);
+        container.addEventListener('touchstart', handleDragStart);
+
+        function bringBackIntoView() {
+           const tvFullRect = tvFull.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+
+            if(tvFullRect.bottom < containerRect.top){
+                //tvFull is above
+                tvFull.style.top = "0px";
+            }
+            else if (tvFullRect.top > containerRect.bottom){
+                //tvFull is below
+                tvFull.style.top = (container.offsetHeight - tvFull.offsetHeight) + "px";
+            }
+        }
+    </script>
+
+</body>
+</html>

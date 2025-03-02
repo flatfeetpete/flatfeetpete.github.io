@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TV Position Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            touch-action: none;
+            user-select: none; /* Prevent text selection while dragging */
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        #background, #tv {
+            position: absolute;
+            width: 100%;
+            height: auto;
+            left: 0;
+            -webkit-user-drag: none; /* Prevent image dragging */
+        }
+
+        #background {
+            top: 0;
+            z-index: 1;
+        }
+
+        #tv {
+            z-index: 2;
+            cursor: grab;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img id="background" src="background.png" alt="Background">
+        <img id="tv" src="tv_full.png" alt="TV">
+    </div>
+
+    <script>
+        const tv = document.getElementById('tv');
+        let isDragging = false;
+        let startY;
+        let tvTop;
+
+        function handleStart(e) {
+            if (e.cancelable) {
+                e.preventDefault(); // Prevent default only if cancelable
+            }
+            isDragging = true;
+            startY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
+            tvTop = parseFloat(window.getComputedStyle(tv).top) || 0;
+            tv.style.cursor = 'grabbing';
+        }
+
+        function handleMove(e) {
+            if (!isDragging) return;
+            if (e.cancelable) {
+                e.preventDefault(); // Prevent default only if cancelable
+            }
+            
+            const currentY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
+            const deltaY = currentY - startY;
+            tv.style.top = `${tvTop + deltaY}px`;
+        }
+
+        function handleEnd(e) {
+            if (!isDragging) return;
+            if (e.cancelable) {
+                e.preventDefault(); // Prevent default only if cancelable
+            }
+            isDragging = false;
+            tv.style.cursor = 'grab';
+        }
+
+        // Mouse events
+        tv.addEventListener('mousedown', handleStart, { passive: false });
+        document.addEventListener('mousemove', handleMove, { passive: false });
+        document.addEventListener('mouseup', handleEnd, { passive: false });
+
+        // Touch events
+        tv.addEventListener('touchstart', handleStart, { passive: false });
+        document.addEventListener('touchmove', handleMove, { passive: false });
+        document.addEventListener('touchend', handleEnd, { passive: false });
+
+        // Handle edge cases
+        document.addEventListener('mouseleave', handleEnd);
+        document.addEventListener('touchcancel', handleEnd);
+    </script>
+</body>
+</html>
