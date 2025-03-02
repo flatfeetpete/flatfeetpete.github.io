@@ -35,19 +35,42 @@
             z-index: 2;
             cursor: grab;
         }
+
+        #offset-display {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 3;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <img id="background" src="background.png" alt="Background">
         <img id="tv" src="tv_full.png" alt="TV">
+        <div id="offset-display">0</div>
     </div>
 
     <script>
         const tv = document.getElementById('tv');
+        const offsetDisplay = document.getElementById('offset-display');
         let isDragging = false;
         let startY;
         let tvTop;
+
+        function calculateScaledOffset(pixelOffset) {
+            return Math.round(((pixelOffset / window.innerWidth) * 1000+ 126) * 100/243 ) ;
+        }
+
+        function updateDisplay(offset) {
+            offsetDisplay.textContent = calculateScaledOffset(offset);
+        }
 
         function handleStart(e) {
             if (e.cancelable) {
@@ -67,7 +90,9 @@
             
             const currentY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
             const deltaY = currentY - startY;
-            tv.style.top = `${tvTop + deltaY}px`;
+            const newTop = tvTop + deltaY;
+            tv.style.top = `${newTop}px`;
+            updateDisplay(newTop);
         }
 
         function handleEnd(e) {
@@ -92,6 +117,12 @@
         // Handle edge cases
         document.addEventListener('mouseleave', handleEnd);
         document.addEventListener('touchcancel', handleEnd);
+
+        // Add resize event listener
+        window.addEventListener('resize', () => {
+            const currentTop = parseFloat(window.getComputedStyle(tv).top) || 0;
+            updateDisplay(currentTop);
+        });
     </script>
 </body>
 </html>
