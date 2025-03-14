@@ -206,6 +206,8 @@
         });
         // touchstart should also do balloons. Here because it might stop zooming
         document.addEventListener('touchstart', function(e) {
+            //document.write(e);
+            if(e.target = restartButton) return;
             e.preventDefault();
             dropBalloon(event.clientX);
         }, { passive: false });
