@@ -227,7 +227,7 @@
                 progress = Math.max(0, progress - (width/2) * (1/150)); // Takes 2.5 seconds to empty
             }
 
-            // Draw the line
+            // Draw the first row of the line
             for(let x = 0; x < width; x++) {
                 const i = x * 4;
                 const distanceFromCenter = Math.abs(x - width/2);
@@ -245,6 +245,12 @@
                     pixels[i + 2] = 0;   // B
                     pixels[i + 3] = 55;  // A
                 }
+            }
+
+            // Copy first row to all other rows
+            const firstRow = pixels.slice(0, width * 4);
+            for(let y = 1; y < 10; y++) {
+                pixels.set(firstRow, y * width * 4);
             }
 
             lineCtx.putImageData(lineData, 0, 0);
