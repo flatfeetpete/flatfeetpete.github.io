@@ -4,10 +4,13 @@
     <title>Balloon Drop Physics</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
         #canvas-container {
-            width: 800px;
-            height: 600px;
-            border: 2px solid black;
+            width: 100vw;
+            height: 100vh;
             position: relative;
         }
         #drop-button {
@@ -28,31 +31,35 @@
         // Matter.js module aliases
         const { Engine, Render, World, Bodies, Runner } = Matter;
 
+        // Get container dimensions
+        const container = document.getElementById('canvas-container');
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
         // Create engine and world
         const engine = Engine.create();
         const world = engine.world;
 
-        // Create renderer
+        // Create renderer with dynamic size
         const render = Render.create({
-            element: document.getElementById('canvas-container'),
+            element: container,
             engine: engine,
             options: {
-                width: 800,
-                height: 600,
+                width: width,
+                height: height,
                 wireframes: false
             }
         });
 
-        // Create ground
-        const ground = Bodies.rectangle(400, 590, 800, 20, { 
+        // Create ground and walls with dynamic size
+        const ground = Bodies.rectangle(width/2, height-10, width, 20, { 
             isStatic: true,
             render: { fillStyle: '#666' }
         });
         World.add(world, ground);
 
-        // Create walls
-        const leftWall = Bodies.rectangle(0, 300, 20, 600, { isStatic: true });
-        const rightWall = Bodies.rectangle(800, 300, 20, 600, { isStatic: true });
+        const leftWall = Bodies.rectangle(0, height/2, 20, height, { isStatic: true });
+        const rightWall = Bodies.rectangle(width, height/2, 20, height, { isStatic: true });
         World.add(world, [leftWall, rightWall]);
 
         // Load and process image
@@ -133,12 +140,12 @@
         };
 
         // Drop balloon function
-        function dropBalloon() {
+        function dropBalloon(x) {
             if (!imageWidth || !imageHeight || !vertices) return;
 
-            const scale = 0.5 * (0.5 + Math.random());
+            const scale = 0.5 + (0.5 * Math.random());
             const balloon = Bodies.fromVertices(
-                Math.random() * (700 - imageWidth*scale) + imageWidth*scale/2,
+                x || Math.random() * (width - imageWidth*scale) + imageWidth*scale/2,
                 50,
                 [vertices.map(p => ({ 
                     x: (p.x - imageWidth/2) * scale, 
@@ -157,8 +164,20 @@
             World.add(world, balloon);
         }
 
-        // Add click handler
-        document.getElementById('drop-button').addEventListener('click', dropBalloon);
+        // Add click handlers
+        document.getElementById('drop-button').addEventListener('click', () => dropBalloon());
+        document.addEventListener('click', (event) => {
+            if (event.target.id !== 'drop-button') {
+                dropBalloon(event.clientX);
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            render.canvas.width = container.clientWidth;
+            render.canvas.height = container.clientHeight;
+            Render.setPixelRatio(render, window.devicePixelRatio);
+        });
 
         // Run the engine
         Runner.run(engine);
