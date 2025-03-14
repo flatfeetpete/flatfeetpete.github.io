@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Balloon Drop Physics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        #canvas-container {
+            width: 800px;
+            height: 600px;
+            border: 2px solid black;
+            position: relative;
+        }
+        #drop-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <button id="drop-button">Drop Balloon!</button>
+    </div>
+
+    <script>
+        // Matter.js module aliases
+        const { Engine, Render, World, Bodies, Runner } = Matter;
+
+        // Create engine and world
+        const engine = Engine.create();
+        const world = engine.world;
+
+        // Create renderer
+        const render = Render.create({
+            element: document.getElementById('canvas-container'),
+            engine: engine,
+            options: {
+                width: 800,
+                height: 600,
+                wireframes: false
+            }
+        });
+
+        // Create ground
+        const ground = Bodies.rectangle(400, 590, 800, 20, { 
+            isStatic: true,
+            render: { fillStyle: '#666' }
+        });
+        World.add(world, ground);
+
+        // Create walls
+        const leftWall = Bodies.rectangle(0, 300, 20, 600, { isStatic: true });
+        const rightWall = Bodies.rectangle(800, 300, 20, 600, { isStatic: true });
+        World.add(world, [leftWall, rightWall]);
+
+        // Load and process image
+        const img = new Image();
+        img.src = 'red_balloon_thumbs_up.png';
+        let imageWidth, imageHeight;
+        let vertices = null;
+
+        function getImageVertices(ctx, width, height) {
+            const points = [];
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+            
+            // Sample points around the edge of the image
+            for (let y = 0; y < height; y += 4) {
+                for (let x = 0; x < width; x += 4) {
+                    const alpha = data[((y * width + x) * 4) + 3];
+                    if (alpha > 128) {
+                        // Check if this pixel is on the edge
+                        const left = x > 0 ? data[((y * width + (x-1)) * 4) + 3] : 0;
+                        const right = x < width-1 ? data[((y * width + (x+1)) * 4) + 3] : 0;
+                        const up = y > 0 ? data[(((y-1) * width + x) * 4) + 3] : 0;
+                        const down = y < height-1 ? data[(((y+1) * width + x) * 4) + 3] : 0;
+                        
+                        if (left < 128 || right < 128 || up < 128 || down < 128) {
+                            points.push({ x: x, y: y });
+                        }
+                    }
+                }
+            }
+            
+            // Convex hull algorithm (Graham Scan)
+            function cross(o, a, b) {
+                return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+            }
+            
+            points.sort((a, b) => {
+                return a.x === b.x ? a.y - b.y : a.x - b.x;
+            });
+            
+            const hull = [];
+            
+            for (let i = 0; i < points.length; i++) {
+                while (hull.length >= 2 && 
+                       cross(hull[hull.length-2], hull[hull.length-1], points[i]) <= 0) {
+                    hull.pop();
+                }
+                hull.push(points[i]);
+            }
+            
+            const len = hull.length + 1;
+            for (let i = points.length - 2; i >= 0; i--) {
+                while (hull.length >= len && 
+                       cross(hull[hull.length-2], hull[hull.length-1], points[i]) <= 0) {
+                    hull.pop();
+                }
+                hull.push(points[i]);
+            }
+            
+            hull.pop();
+            return hull;
+        }
+
+        img.onload = function() {
+            // Create temporary canvas to analyze image
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            tempCtx.drawImage(img, 0, 0);
+
+            // Get image dimensions
+            imageWidth = img.width;
+            imageHeight = img.height;
+            
+            // Generate vertices for collision
+            vertices = getImageVertices(tempCtx, imageWidth, imageHeight);
+        };
+
+        // Drop balloon function
+        function dropBalloon() {
+            if (!imageWidth || !imageHeight || !vertices) return;
+
+            const balloon = Bodies.fromVertices(
+                Math.random() * (700 - imageWidth) + imageWidth/2,
+                50,
+                [vertices.map(p => ({ x: p.x - imageWidth/2, y: p.y - imageHeight/2 }))],
+                {
+                    render: {
+                        sprite: {
+                            texture: img.src,
+                            xScale: 1,
+                            yScale: 1
+                        }
+                    }
+                }
+            );
+            World.add(world, balloon);
+        }
+
+        // Add click handler
+        document.getElementById('drop-button').addEventListener('click', dropBalloon);
+
+        // Run the engine
+        Runner.run(engine);
+        Render.run(render);
+    </script>
+</body>
+</html>
