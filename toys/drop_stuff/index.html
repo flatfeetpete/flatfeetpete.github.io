@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Balloon Drop Physics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         body {
@@ -10,7 +11,7 @@
         }
         #canvas-container {
             width: 100vw;
-            height: 100vh;
+            height: 80vh;
             position: relative;
         }
         #drop-button {
@@ -19,6 +20,7 @@
             left: 10px;
             z-index: 1;
             padding: 10px;
+            opacity: 0%;
         }
     </style>
 </head>
@@ -28,6 +30,11 @@
     </div>
 
     <script>
+        // Prevent default touch behaviors
+        document.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
         // Matter.js module aliases
         const { Engine, Render, World, Bodies, Runner } = Matter;
 
