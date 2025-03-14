@@ -22,12 +22,26 @@
             padding: 10px;
             opacity: 0%;
         }
+        #restart-button {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            font-size: 24px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #333;
+            border-radius: 10px;
+            display: none;
+            z-index: 2;
+        }
     </style>
 </head>
 <body>
     <div id="canvas-container">
         <button id="drop-button">Drop Balloon!</button>
     </div>
+    <button id="restart-button">Goal Complete, tap to restart</button>
 
     <script>
 
@@ -36,6 +50,7 @@
 
         // Get container dimensions
         const container = document.getElementById('canvas-container');
+        const restartButton = document.getElementById('restart-button');
         const width = container.clientWidth;
         const height = container.clientHeight;
 
@@ -202,9 +217,32 @@
             Render.setPixelRatio(render, window.devicePixelRatio);
         });
 
-        let progress = 0; // Add this at the top of your script with other variables
+        let progress = 0;
+        let isComplete = false;
+
+        function resetSimulation() {
+            // Clear all balloons
+            const bodies = Composite.allBodies(world);
+            bodies.forEach(body => {
+                if (body !== ground && body !== leftWall && body !== rightWall) {
+                    World.remove(world, body);
+                }
+            });
+            
+            // Reset progress and state
+            progress = 0;
+            isComplete = false;
+            restartButton.style.display = 'none';
+        }
+
+        restartButton.addEventListener('click', resetSimulation);
 
         function updateLine() {
+            if (isComplete) {
+                requestAnimationFrame(updateLine);
+                return;
+            }
+
             const lineData = lineCtx.getImageData(0, 0, width, 10);
             const pixels = lineData.data;
             let isOverlapped = false;
@@ -223,6 +261,10 @@
             // Update progress
             if (isOverlapped) {
                 progress = Math.min(width/2, progress + (width/2) * (1/300)); // Takes 5 seconds to fill
+                if (progress >= width/2) {
+                    isComplete = true;
+                    restartButton.style.display = 'block';
+                }
             } else {
                 progress = Math.max(0, progress - (width/2) * (1/150)); // Takes 2.5 seconds to empty
             }
@@ -232,12 +274,18 @@
                 const i = x * 4;
                 const distanceFromCenter = Math.abs(x - width/2);
                 
-                if (distanceFromCenter <= progress) {
+                if (isComplete) {
+                    // White celebration line
+                    pixels[i] = 255;     // R
+                    pixels[i + 1] = 255; // G
+                    pixels[i + 2] = 255; // B
+                    pixels[i + 3] = 255; // A
+                } else if (distanceFromCenter <= progress) {
                     // Green progress bar
                     pixels[i] = 0;       // R
-                    pixels[i + 1] = 255;  // G
-                    pixels[i + 2] = 0;    // B
-                    pixels[i + 3] = 255;  // A
+                    pixels[i + 1] = 255; // G
+                    pixels[i + 2] = 0;   // B
+                    pixels[i + 3] = 255; // A
                 } else {
                     // Transparent red background
                     pixels[i] = 255;     // R
