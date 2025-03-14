@@ -30,13 +30,9 @@
     </div>
 
     <script>
-        // Prevent default touch behaviors
-        document.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-        }, { passive: false });
 
         // Matter.js module aliases
-        const { Engine, Render, World, Bodies, Runner } = Matter;
+        const { Engine, Render, World, Bodies, Runner, Composite } = Matter;
 
         // Get container dimensions
         const container = document.getElementById('canvas-container');
@@ -68,6 +64,21 @@
         const leftWall = Bodies.rectangle(0, height/2, 20, height, { isStatic: true });
         const rightWall = Bodies.rectangle(width, height/2, 20, height, { isStatic: true });
         World.add(world, [leftWall, rightWall]);
+
+        // Create scoring line
+        const lineY = height / 3;
+        const lineCanvas = document.createElement('canvas');
+        lineCanvas.width = width;
+        lineCanvas.height = 10;
+        lineCanvas.style.position = 'absolute';
+        lineCanvas.style.left = '0';
+        lineCanvas.style.top = lineY + 'px';
+        lineCanvas.style.pointerEvents = 'none';
+        container.appendChild(lineCanvas);
+        
+        const lineCtx = lineCanvas.getContext('2d');
+        lineCtx.fillStyle = 'red';
+        lineCtx.fillRect(0, 0, width, 10);
 
         // Load and process image
         const img = new Image();
@@ -150,7 +161,7 @@
         function dropBalloon(x) {
             if (!imageWidth || !imageHeight || !vertices) return;
 
-            const scale = 0.5 + (0.5 * Math.random());
+            const scale = 0.25 + (0.25 * Math.random());
             const balloon = Bodies.fromVertices(
                 x || Math.random() * (width - imageWidth*scale) + imageWidth*scale/2,
                 50,
@@ -178,6 +189,11 @@
                 dropBalloon(event.clientX);
             }
         });
+        // touchstart should also do balloons. Here because it might stop zooming
+        document.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            dropBalloon(event.clientX);
+        }, { passive: false });
 
         // Handle window resize
         window.addEventListener('resize', () => {
@@ -186,9 +202,47 @@
             Render.setPixelRatio(render, window.devicePixelRatio);
         });
 
+        // Add scoring function to game loop
+        function updateLine() {
+            const lineData = lineCtx.getImageData(0, 0, width, 10);
+            const pixels = lineData.data;
+            
+            // Reset line color
+            for(let i = 0; i < pixels.length; i += 4) {
+                pixels[i] = 255;     // R
+                pixels[i + 1] = 0;   // G
+                pixels[i + 2] = 0;   // B
+                pixels[i + 3] = 155; // A
+            }
+
+            // Check for balloon overlaps
+            const bodies = Composite.allBodies(world);
+            bodies.forEach(body => {
+                if (body !== ground && body !== leftWall && body !== rightWall) {
+                    const bounds = body.bounds;
+                    if (bounds.min.y <= lineY && bounds.max.y >= lineY) {
+                        console.log(body.bounds);
+                        // const start = Math.max(0, Math.floor(bounds.min.x));
+                        // const end = Math.min(width, Math.ceil(bounds.max.x));
+                        
+                        // for(let x = start; x < end; x++) {
+                        for(let x = 0; x < pixels.length; x++) {
+                            const i = x * 4;
+                            pixels[i] = Math.max(0, pixels[i] - 100);     // Decrease red
+                            pixels[i + 1] = Math.min(255, pixels[i + 1] + 100); // Increase green
+                        }
+                    }
+                }
+            });
+
+            lineCtx.putImageData(lineData, 0, 0);
+            requestAnimationFrame(updateLine);
+        }
+
         // Run the engine
         Runner.run(engine);
         Render.run(render);
+        updateLine();
     </script>
 </body>
 </html>
