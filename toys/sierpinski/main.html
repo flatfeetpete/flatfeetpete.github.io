@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Sierpinski Shape</title>
+    <style>
+        body {
+            background-color: black;
+            margin: 0;
+            padding: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="controls">
+        <label>Points per frame: <span id="pointsValue">100</span></label>
+        <input type="range" id="pointsPerFrame" min="1" max="1000" value="100"><br>
+        <label>Vertices: <span id="verticesValue">5</span></label>
+        <input type="range" id="verticesSlider" min="3" max="10" value="5"><br>
+        <label>Fraction to jump: <span id="ratioValue">½</span></label>
+        <input type="range" id="ratioSlider" min="0" max="11" value="5"><br>
+        <label>Subdivide edges: <span id="subdivValue">1</span></label>
+        <input type="range" id="subdivSlider" min="1" max="4" value="1"><br>
+        <label>Edge wobble: <span id="edgeWobbleValue">0</span></label>
+        <input type="range" id="edgeWobbleSlider" min="0" max="50" value="0"><br>
+    </div>
+    <canvas id="canvas" width="1024" height="1024"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const pointsSlider = document.getElementById('pointsPerFrame');
+        const pointsValue = document.getElementById('pointsValue');
+        const verticesSlider = document.getElementById('verticesSlider');
+        const verticesValue = document.getElementById('verticesValue');
+        const ratioSlider = document.getElementById('ratioSlider');
+        const ratioValue = document.getElementById('ratioValue');
+
+        // map borrowed from https://github.com/lights0123/fractions/blob/master/math.js
+        var fraction_unicode = {
+            '1/2': '½',
+            '1/3': '⅓',
+            '2/3': '⅔',
+            '1/4': '¼',
+            '3/4': '¾',
+            '1/5': '⅕',
+            '2/5': '⅖',
+            '3/5': '⅗',
+            '4/5': '⅘',
+            '1/6': '⅙',
+            '5/6': '⅚'
+        };
+
+        let range_options = [];
+
+        // gross 
+        for (const [key, value] of Object.entries(fraction_unicode)) {
+            range_options.push(
+                {
+                    ratio: eval(key),  // ewwww
+                    display: value
+                });
+        };
+        range_options.sort((a, b) => a.ratio - b.ratio);
+        ratioSlider.max = range_options.length - 1;
+
+        // This should be dynamic based on the above.
+        let ratio = 0.5;
+
+
+        // Set canvas background to black
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        function generateVertices(numVertices, subDiv, wobble) {
+            let vertices = [];
+            const radius = Math.min(canvas.width,canvas.height) * 3 / 8; // Distance from center to vertices
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            for (let i = 0; i < numVertices; i++) {
+                const angle = (i * 2 * Math.PI / numVertices) - Math.PI / 2; // Start from top
+                vertices.push({
+                    x: centerX + radius * Math.cos(angle),
+                    y: centerY + radius * Math.sin(angle)
+                });
+            }
+            if (subDiv != 1) {
+                const postSubDivVertices = [];
+                for (let i = 0; i < numVertices * subDiv; i++) {
+                    const thisVertexIndex = Math.floor(i / subDiv);
+                    const nextVertexIndex = Math.floor((i + subDiv - 1) / subDiv) % numVertices;
+                    const offset = (i % subDiv) / subDiv;
+                    const thisVertex = vertices[thisVertexIndex];
+                    const nextVertex = vertices[nextVertexIndex];
+                    console.log(thisVertexIndex, nextVertexIndex, offset, thisVertex, nextVertex);
+                    postSubDivVertices.push({
+                        x: thisVertex.x * (1 - offset) + nextVertex.x * offset,
+                        y: thisVertex.y * (1 - offset) + nextVertex.y * offset
+                    });
+                }
+
+                vertices = postSubDivVertices;
+            }
+            // Now we wobble the edges.
+            if (wobble != 0) {
+                for (let i = 0; i < vertices.length; i++) {
+                    const wobbleAmount = Math.random() * wobble * 2 - wobble;
+                    vertices[i].x += (vertices[i].x - centerX) * wobbleAmount;
+                    vertices[i].y += (vertices[i].y - centerY) * wobbleAmount;
+                }
+            }
+            return vertices;
+        }
+
+        let vertices = generateVertices(5, 1, 0);
+        const gridSize = 1;
+        const pointCounts = new Map();
+
+        let currentPoint = {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height
+        };
+
+        function getGridKey(x, y) {
+            return Math.floor(x / gridSize) + ',' + Math.floor(y / gridSize);
+        }
+
+        function updateFromUI() {
+            const numVertices = parseInt(verticesSlider.value);
+            verticesValue.textContent = numVertices;
+            const subDiv = parseInt(subdivSlider.value);
+            subdivValue.textContent = subDiv;
+            const wobble = parseInt(edgeWobbleSlider.value);
+            edgeWobbleValue.textContent = wobble;
+
+            vertices = generateVertices(numVertices, subDiv, wobble / 100.0);
+
+            const ratioOption = parseInt(ratioSlider.value);
+            ratioValue.textContent = range_options[ratioOption].display;
+            ratio = range_options[ratioOption].ratio;
+
+
+
+            // Clear canvas
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            pointCounts.clear();
+
+        }
+
+        verticesSlider.addEventListener('input', updateFromUI);
+        ratioSlider.addEventListener('input', updateFromUI);
+        subdivSlider.addEventListener('input', updateFromUI);
+        edgeWobbleSlider.addEventListener('input', updateFromUI);
+
+
+        function drawPoints() {
+            const pointsToDraw = parseInt(pointsSlider.value);
+            pointsValue.textContent = pointsToDraw;
+
+            for (let i = 0; i < pointsToDraw; i++) {
+                const randomVertex = vertices[Math.floor(Math.random() * vertices.length)];
+
+                currentPoint = {
+                    x: currentPoint.x * (1 - ratio) + randomVertex.x * ratio,
+                    y: currentPoint.y * (1 - ratio) + randomVertex.y * ratio
+                };
+
+                const key = getGridKey(currentPoint.x, currentPoint.y);
+                const hitCount = (pointCounts.get(key) || 0) + 1;
+                pointCounts.set(key, hitCount);
+
+                const hue = (hitCount * 5) % 360;
+                ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+
+                ctx.beginPath();
+                ctx.arc(currentPoint.x, currentPoint.y, 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            requestAnimationFrame(drawPoints);
+        }
+
+        drawPoints();
+    </script>
+</body>
+
+</html>
