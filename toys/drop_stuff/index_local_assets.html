@@ -58,6 +58,12 @@
             console.log("container width " + width);
             console.log("container height " + height);
 
+            if (width == 0) {
+                console.log("setting one second timer");
+                setTimeout(init, 1000);
+                return;
+            }
+
             // Create engine and world
             const engine = Engine.create();
             const world = engine.world;
