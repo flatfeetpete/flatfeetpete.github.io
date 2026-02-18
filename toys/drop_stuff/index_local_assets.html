@@ -48,269 +48,273 @@
         // Matter.js module aliases
         const { Engine, Render, World, Bodies, Runner, Composite } = Matter;
 
-        // Get container dimensions
-        const container = document.getElementById('canvas-container');
-        const restartButton = document.getElementById('restart-button');
-        const width = container.clientWidth;
-        const height = container.clientHeight;
+        function init() {
+            // Get container dimensions
+            const container = document.getElementById('canvas-container');
+            const restartButton = document.getElementById('restart-button');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
 
-        // Create engine and world
-        const engine = Engine.create();
-        const world = engine.world;
+            // Create engine and world
+            const engine = Engine.create();
+            const world = engine.world;
 
-        // Create renderer with dynamic size
-        const render = Render.create({
-            element: container,
-            engine: engine,
-            options: {
-                width: width,
-                height: height,
-                wireframes: false
-            }
-        });
-
-        // Create ground and walls with dynamic size
-        const ground = Bodies.rectangle(width/2, height-10, width, 20, { 
-            isStatic: true,
-            render: { fillStyle: '#666' }
-        });
-        World.add(world, ground);
-
-        const leftWall = Bodies.rectangle(0, height/2, 20, height, { isStatic: true });
-        const rightWall = Bodies.rectangle(width, height/2, 20, height, { isStatic: true });
-        World.add(world, [leftWall, rightWall]);
-
-        // Create scoring line
-        const lineY = height / 4;
-        const lineCanvas = document.createElement('canvas');
-        lineCanvas.width = width;
-        lineCanvas.height = 10;
-        lineCanvas.style.position = 'absolute';
-        lineCanvas.style.left = '0';
-        lineCanvas.style.top = lineY + 'px';
-        lineCanvas.style.pointerEvents = 'none';
-        container.appendChild(lineCanvas);
-        
-        const lineCtx = lineCanvas.getContext('2d');
-        lineCtx.fillStyle = '#f008';
-        lineCtx.fillRect(0, 0, width, 10);
-
-        // Load and process image
-        const img = new Image();
-        img.src = 'red_balloon_thumbs_up.png';
-        let imageWidth, imageHeight;
-        let vertices = null;
-
-        function getImageVertices(ctx, width, height) {
-            const points = [];
-            const imageData = ctx.getImageData(0, 0, width, height);
-            const data = imageData.data;
-            
-            // Sample points around the edge of the image
-            for (let y = 0; y < height; y += 4) {
-                for (let x = 0; x < width; x += 4) {
-                    const alpha = data[((y * width + x) * 4) + 3];
-                    if (alpha > 128) {
-                        // Check if this pixel is on the edge
-                        const left = x > 0 ? data[((y * width + (x-1)) * 4) + 3] : 0;
-                        const right = x < width-1 ? data[((y * width + (x+1)) * 4) + 3] : 0;
-                        const up = y > 0 ? data[(((y-1) * width + x) * 4) + 3] : 0;
-                        const down = y < height-1 ? data[(((y+1) * width + x) * 4) + 3] : 0;
-                        
-                        if (left < 128 || right < 128 || up < 128 || down < 128) {
-                            points.push({ x: x, y: y });
-                        }
-                    }
-                }
-            }
-            
-            // Convex hull algorithm (Graham Scan)
-            function cross(o, a, b) {
-                return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-            }
-            
-            points.sort((a, b) => {
-                return a.x === b.x ? a.y - b.y : a.x - b.x;
-            });
-            
-            const hull = [];
-            
-            for (let i = 0; i < points.length; i++) {
-                while (hull.length >= 2 && 
-                       cross(hull[hull.length-2], hull[hull.length-1], points[i]) <= 0) {
-                    hull.pop();
-                }
-                hull.push(points[i]);
-            }
-            
-            const len = hull.length + 1;
-            for (let i = points.length - 2; i >= 0; i--) {
-                while (hull.length >= len && 
-                       cross(hull[hull.length-2], hull[hull.length-1], points[i]) <= 0) {
-                    hull.pop();
-                }
-                hull.push(points[i]);
-            }
-            
-            hull.pop();
-            return hull;
-        }
-
-        img.onload = function() {
-            // Create temporary canvas to analyze image
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCanvas.width = img.width;
-            tempCanvas.height = img.height;
-            tempCtx.drawImage(img, 0, 0);
-
-            // Get image dimensions
-            imageWidth = img.width;
-            imageHeight = img.height;
-            
-            // Generate vertices for collision
-            vertices = getImageVertices(tempCtx, imageWidth, imageHeight);
-        };
-
-        // Drop balloon function
-        function dropBalloon(x) {
-            if (!imageWidth || !imageHeight || !vertices) return;
-
-            const scale = 0.25 + (0.25 * Math.random());
-            const balloon = Bodies.fromVertices(
-                x || Math.random() * (width - imageWidth*scale) + imageWidth*scale/2,
-                50,
-                [vertices.map(p => ({ 
-                    x: (p.x - imageWidth/2) * scale, 
-                    y: (p.y - imageHeight/2) * scale 
-                }))],
-                {
-                    render: {
-                        sprite: {
-                            texture: img.src,
-                            xScale: scale,
-                            yScale: scale
-                        }
-                    }
-                }
-            );
-            World.add(world, balloon);
-        }
-
-        // Add click handlers
-        document.getElementById('drop-button').addEventListener('click', () => dropBalloon());
-        document.addEventListener('click', (event) => {
-            if (event.target.id !== 'drop-button') {
-                dropBalloon(event.clientX);
-            }
-        });
-        // touchstart should also do balloons. Here because it might stop zooming
-        document.addEventListener('touchstart', function(e) {
-            //document.write(e);
-            if(e.target = restartButton) return;
-            e.preventDefault();
-            dropBalloon(event.clientX);
-        }, { passive: false });
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            render.canvas.width = container.clientWidth;
-            render.canvas.height = container.clientHeight;
-            Render.setPixelRatio(render, window.devicePixelRatio);
-        });
-
-        let progress = 0;
-        let isComplete = false;
-
-        function resetSimulation() {
-            // Clear all balloons
-            const bodies = Composite.allBodies(world);
-            bodies.forEach(body => {
-                if (body !== ground && body !== leftWall && body !== rightWall) {
-                    World.remove(world, body);
-                }
-            });
-            
-            // Reset progress and state
-            progress = 0;
-            isComplete = false;
-            restartButton.style.display = 'none';
-        }
-
-        restartButton.addEventListener('click', resetSimulation);
-
-        function updateLine() {
-            if (isComplete) {
-                requestAnimationFrame(updateLine);
-                return;
-            }
-
-            const lineData = lineCtx.getImageData(0, 0, width, 10);
-            const pixels = lineData.data;
-            let isOverlapped = false;
-            
-            // Check for balloon overlaps
-            const bodies = Composite.allBodies(world);
-            bodies.forEach(body => {
-                if (body !== ground && body !== leftWall && body !== rightWall) {
-                    const bounds = body.bounds;
-                    if (bounds.min.y <= lineY && bounds.max.y >= lineY) {
-                        isOverlapped = true;
-                    }
+            // Create renderer with dynamic size
+            const render = Render.create({
+                element: container,
+                engine: engine,
+                options: {
+                    width: width,
+                    height: height,
+                    wireframes: false
                 }
             });
 
-            // Update progress
-            if (isOverlapped) {
-                progress = Math.min(width/2, progress + (width/2) * (1/300)); // Takes 5 seconds to fill
-                if (progress >= width/2) {
-                    isComplete = true;
-                    restartButton.style.display = 'block';
-                }
-            } else {
-                progress = Math.max(0, progress - (width/2) * (1/150)); // Takes 2.5 seconds to empty
-            }
+            // Create ground and walls with dynamic size
+            const ground = Bodies.rectangle(width/2, height-10, width, 20, { 
+                isStatic: true,
+                render: { fillStyle: '#666' }
+            });
+            World.add(world, ground);
 
-            // Draw the first row of the line
-            for(let x = 0; x < width; x++) {
-                const i = x * 4;
-                const distanceFromCenter = Math.abs(x - width/2);
+            const leftWall = Bodies.rectangle(0, height/2, 20, height, { isStatic: true });
+            const rightWall = Bodies.rectangle(width, height/2, 20, height, { isStatic: true });
+            World.add(world, [leftWall, rightWall]);
+
+            // Create scoring line
+            const lineY = height / 4;
+            const lineCanvas = document.createElement('canvas');
+            lineCanvas.width = width;
+            lineCanvas.height = 10;
+            lineCanvas.style.position = 'absolute';
+            lineCanvas.style.left = '0';
+            lineCanvas.style.top = lineY + 'px';
+            lineCanvas.style.pointerEvents = 'none';
+            container.appendChild(lineCanvas);
+            
+            const lineCtx = lineCanvas.getContext('2d');
+            lineCtx.fillStyle = '#f008';
+            lineCtx.fillRect(0, 0, width, 10);
+
+            // Load and process image
+            const img = new Image();
+            img.src = 'red_balloon_thumbs_up.png';
+            let imageWidth, imageHeight;
+            let vertices = null;
+
+            function getImageVertices(ctx, width, height) {
+                const points = [];
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const data = imageData.data;
                 
-                if (isComplete) {
-                    // White celebration line
-                    pixels[i] = 255;     // R
-                    pixels[i + 1] = 255; // G
-                    pixels[i + 2] = 255; // B
-                    pixels[i + 3] = 255; // A
-                } else if (distanceFromCenter <= progress) {
-                    // Green progress bar
-                    pixels[i] = 0;       // R
-                    pixels[i + 1] = 255; // G
-                    pixels[i + 2] = 0;   // B
-                    pixels[i + 3] = 255; // A
-                } else {
-                    // Transparent red background
-                    pixels[i] = 255;     // R
-                    pixels[i + 1] = 0;   // G
-                    pixels[i + 2] = 0;   // B
-                    pixels[i + 3] = 55;  // A
+                // Sample points around the edge of the image
+                for (let y = 0; y < height; y += 4) {
+                    for (let x = 0; x < width; x += 4) {
+                        const alpha = data[((y * width + x) * 4) + 3];
+                        if (alpha > 128) {
+                            // Check if this pixel is on the edge
+                            const left = x > 0 ? data[((y * width + (x-1)) * 4) + 3] : 0;
+                            const right = x < width-1 ? data[((y * width + (x+1)) * 4) + 3] : 0;
+                            const up = y > 0 ? data[(((y-1) * width + x) * 4) + 3] : 0;
+                            const down = y < height-1 ? data[(((y+1) * width + x) * 4) + 3] : 0;
+                            
+                            if (left < 128 || right < 128 || up < 128 || down < 128) {
+                                points.push({ x: x, y: y });
+                            }
+                        }
+                    }
                 }
+                
+                // Convex hull algorithm (Graham Scan)
+                function cross(o, a, b) {
+                    return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+                }
+                
+                points.sort((a, b) => {
+                    return a.x === b.x ? a.y - b.y : a.x - b.x;
+                });
+                
+                const hull = [];
+                
+                for (let i = 0; i < points.length; i++) {
+                    while (hull.length >= 2 && 
+                        cross(hull[hull.length-2], hull[hull.length-1], points[i]) <= 0) {
+                        hull.pop();
+                    }
+                    hull.push(points[i]);
+                }
+                
+                const len = hull.length + 1;
+                for (let i = points.length - 2; i >= 0; i--) {
+                    while (hull.length >= len && 
+                        cross(hull[hull.length-2], hull[hull.length-1], points[i]) <= 0) {
+                        hull.pop();
+                    }
+                    hull.push(points[i]);
+                }
+                
+                hull.pop();
+                return hull;
             }
 
-            // Copy first row to all other rows
-            const firstRow = pixels.slice(0, width * 4);
-            for(let y = 1; y < 10; y++) {
-                pixels.set(firstRow, y * width * 4);
+            img.onload = function() {
+                // Create temporary canvas to analyze image
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                tempCtx.drawImage(img, 0, 0);
+
+                // Get image dimensions
+                imageWidth = img.width;
+                imageHeight = img.height;
+                
+                // Generate vertices for collision
+                vertices = getImageVertices(tempCtx, imageWidth, imageHeight);
+            };
+
+            // Drop balloon function
+            function dropBalloon(x) {
+                if (!imageWidth || !imageHeight || !vertices) return;
+
+                const scale = 0.25 + (0.25 * Math.random());
+                const balloon = Bodies.fromVertices(
+                    x || Math.random() * (width - imageWidth*scale) + imageWidth*scale/2,
+                    50,
+                    [vertices.map(p => ({ 
+                        x: (p.x - imageWidth/2) * scale, 
+                        y: (p.y - imageHeight/2) * scale 
+                    }))],
+                    {
+                        render: {
+                            sprite: {
+                                texture: img.src,
+                                xScale: scale,
+                                yScale: scale
+                            }
+                        }
+                    }
+                );
+                World.add(world, balloon);
             }
 
-            lineCtx.putImageData(lineData, 0, 0);
-            requestAnimationFrame(updateLine);
+            // Add click handlers
+            document.getElementById('drop-button').addEventListener('click', () => dropBalloon());
+            document.addEventListener('click', (event) => {
+                if (event.target.id !== 'drop-button') {
+                    dropBalloon(event.clientX);
+                }
+            });
+            // touchstart should also do balloons. Here because it might stop zooming
+            document.addEventListener('touchstart', function(e) {
+                //document.write(e);
+                if(e.target = restartButton) return;
+                e.preventDefault();
+                dropBalloon(event.clientX);
+            }, { passive: false });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                render.canvas.width = container.clientWidth;
+                render.canvas.height = container.clientHeight;
+                Render.setPixelRatio(render, window.devicePixelRatio);
+            });
+
+            let progress = 0;
+            let isComplete = false;
+
+            function resetSimulation() {
+                // Clear all balloons
+                const bodies = Composite.allBodies(world);
+                bodies.forEach(body => {
+                    if (body !== ground && body !== leftWall && body !== rightWall) {
+                        World.remove(world, body);
+                    }
+                });
+                
+                // Reset progress and state
+                progress = 0;
+                isComplete = false;
+                restartButton.style.display = 'none';
+            }
+
+            restartButton.addEventListener('click', resetSimulation);
+
+            function updateLine() {
+                if (isComplete) {
+                    requestAnimationFrame(updateLine);
+                    return;
+                }
+
+                const lineData = lineCtx.getImageData(0, 0, width, 10);
+                const pixels = lineData.data;
+                let isOverlapped = false;
+                
+                // Check for balloon overlaps
+                const bodies = Composite.allBodies(world);
+                bodies.forEach(body => {
+                    if (body !== ground && body !== leftWall && body !== rightWall) {
+                        const bounds = body.bounds;
+                        if (bounds.min.y <= lineY && bounds.max.y >= lineY) {
+                            isOverlapped = true;
+                        }
+                    }
+                });
+
+                // Update progress
+                if (isOverlapped) {
+                    progress = Math.min(width/2, progress + (width/2) * (1/300)); // Takes 5 seconds to fill
+                    if (progress >= width/2) {
+                        isComplete = true;
+                        restartButton.style.display = 'block';
+                    }
+                } else {
+                    progress = Math.max(0, progress - (width/2) * (1/150)); // Takes 2.5 seconds to empty
+                }
+
+                // Draw the first row of the line
+                for(let x = 0; x < width; x++) {
+                    const i = x * 4;
+                    const distanceFromCenter = Math.abs(x - width/2);
+                    
+                    if (isComplete) {
+                        // White celebration line
+                        pixels[i] = 255;     // R
+                        pixels[i + 1] = 255; // G
+                        pixels[i + 2] = 255; // B
+                        pixels[i + 3] = 255; // A
+                    } else if (distanceFromCenter <= progress) {
+                        // Green progress bar
+                        pixels[i] = 0;       // R
+                        pixels[i + 1] = 255; // G
+                        pixels[i + 2] = 0;   // B
+                        pixels[i + 3] = 255; // A
+                    } else {
+                        // Transparent red background
+                        pixels[i] = 255;     // R
+                        pixels[i + 1] = 0;   // G
+                        pixels[i + 2] = 0;   // B
+                        pixels[i + 3] = 55;  // A
+                    }
+                }
+
+                // Copy first row to all other rows
+                const firstRow = pixels.slice(0, width * 4);
+                for(let y = 1; y < 10; y++) {
+                    pixels.set(firstRow, y * width * 4);
+                }
+
+                lineCtx.putImageData(lineData, 0, 0);
+                requestAnimationFrame(updateLine);
+            }
+
+            // Run the engine
+            Runner.run(engine);
+            Render.run(render);
+            updateLine();
         }
 
-        // Run the engine
-        Runner.run(engine);
-        Render.run(render);
-        updateLine();
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
